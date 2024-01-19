@@ -9,7 +9,6 @@ defmodule Tavern.Application do
   def start(_type, _args) do
     children = [
       # Starts a worker by calling: Tavern.Worker.start_link(arg)
-      # {Tavern.Worker, arg}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
