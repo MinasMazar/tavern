@@ -5,7 +5,7 @@ defmodule TavernTest do
 
   describe "Tavern.Elisp" do
     test "cast a composed sexp" do
-      sexp = {:message, {:format, [{:str, "message to display is %s"}, {:str, "hello!"}]}}
+      sexp = {:message, {:format, ["message to display is %s", "hello!"]}}
 
       assert Tavern.Elisp.sexp(sexp) == "(message (format \"message to display is %s\" \"hello!\"))"
     end
@@ -13,7 +13,7 @@ defmodule TavernTest do
 
   describe "Tavern.Connection" do
     test "eval a simple sexp" do
-      sexp = {:message, {:format, [{:str, "this is %s!"}, {:str, "Tavern"}]}}
+      sexp = {:message, {:format, ["this is %s!", "Tavern"]}}
 
       assert Tavern.emacs_eval(sexp) == "\"this is Tavern!\""
     end

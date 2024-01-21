@@ -16,7 +16,7 @@ defmodule Tavern.Elisp do
   def sexp(nil), do: ""
   def sexp({:str, nil}), do: ""
   def sexp({:str, body}) when is_binary(body), do: "\"#{body}\""
-  # def sexp(body) when is_binary(body), do: "\"#{body}\""
+  def sexp(body) when is_binary(body), do: "\"#{body}\""
   def sexp(body) when is_atom(body), do: body
 
   @doc """

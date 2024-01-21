@@ -20,7 +20,7 @@ defmodule Tavern.Helpers do
   end
 
   def with_current_buffer(buffer, do: body) do
-    {:"with-current-buffer", [{:"get-buffer-create", [{:str, buffer}]},
+    {:"with-current-buffer", [{:"get-buffer-create", [buffer]},
 			      body
 			     ]}
   end
