@@ -4,82 +4,43 @@ AUTHOR: MinasMazar
 #+PROPERTY: header-args :tangle ~/.emacs.d/modules/tavern.el :mkdirp yes
 #+STARTUP: show2levels
 
-* Introduction
-** What is Tavern?
+* What is Tavern?
 
 [[https://github.com/MinasMazar/tavern][Tavern is an Elixir project]] that allow to inject some Elisp code in a running instance of [[https://www.gnu.org/software/emacs/][Emacs]] (using the =emacsclient= executable) and to easily write Emacs lisp source code using plain Elixir terms.
 
-** Why I should use it?
+* Why I should use it?
 
 No particular reason; if you 💜️ developing with the [[https://elixir-lang.org/][Elxir programming language]] and you ♥️ =Emacs=, you should enjoy experimenting with it.
 
-** Livebook
-
-The [[https://github.com/MinasMazar/tavern/blob/master/tavern.livemd][Tavern livebook]] show you some ideas on how to improve your Emacs experience using the Elixir. [[https://livebook.dev/][For more information about Livebook, check the website]].
-
-** Elixir => Elisp
+* Elixir => Elisp
 
 The =Tavern.Elisp= module implement the =sexp= function that keeps an Elixir term and translates it to a string containing the equivalent Elisp code. Keep an eye to [[https://github.com/MinasMazar/tavern/blob/master/lib/tavern/elisp.ex][the module documentation]] for more details.
 
-** What I'm reading?
+* Installation
+** Requirements
 
-That is the literate Emacs configuration for an a /ready-to-go/ IDE-like editor for Elixir, and if you're using Emacs to read it, you could easy play with =Tavern=. If you want to experiment with it you can
-1. download from [[https://github.com/MinasMazar/minasmazar.github.io/blob/source/pages/tavern.org]]
-2. ~C-c C-v C-t~ (or ~M-x org-babel-tangle~)
-3. backup you current configuration and start a new Emacs session ⚠️ execute the snippet about only if you're familiar with Emacs and you're perfercly conscious that =C-c C-c= on it could mess something in your setup.
+- you've Elixir installed in your system (ref the [[https://elixir-lang.org/install.html][doc]])
+- you've an [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Invoking-emacsclient.html][emacsclient]] executable installed in your system
 
-   #+begin_src sh :tangle no
-     mv .emacs.d .emacs.d.backup
-     ln -sf .emacs.d.tavern .emacs.d
-     emacs
-   #+end_src
+** Install
 
-* Emacs
-** Package manager
-
-#+begin_src emacs-lisp
-  (add-to-list 'load-path "~/.emacs.d/manual-packages/")
-  (require 'package)
-  (setq package-archives '(("melpa" . "https://melpa.org/packages/")
-			   ("elpa" . "https://elpa.gnu.org/packages/")
-			   ("nongnu" . "https://elpa.nongnu.org/nongnu/")))
-  (require 'use-package)
-  (require 'use-package-ensure)
-  (setq use-package-always-ensure t
-	package-enable-at-startup t)
-  (package-initialize)
+#+begin_src sh
+  git clone https://github.com/MinasMazar/tavern.git
+  cd tavern
+  mix deps.get
+  mix compile
 #+end_src
 
-** Org-Babel
 
-Configuration stolen from [[https://orgmode.org/worg/org-contrib/babel/languages/ob-doc-shell.html][here]].
+** Usage
+*** Livebook
 
-#+begin_src emacs-lisp
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((shell . t)
-     (elixir. t)))
-#+end_src
+The [[https://github.com/MinasMazar/tavern/blob/master/tavern.livemd][Tavern livebook]] show you some ideas on how to improve your Emacs experience using the Elixir. [[https://livebook.dev/][For more information about Livebook, check the website]].
 
-** Elixir Major mode
+*** Examples
 
-I've used =Alchemist= in the past, but it seems old and unmaintained. I've then found =Apprentice= package (a fork of =Alchemist=) following the [[https://github.com/Sasanidas/Apprentice/blob/master/doc/installation.md][documentation]]; first of all, download the repo:
+Or you can run /bot/ of in [[https://github.com/MinasMazar/tavern/tree/master/examples][the examples directory]].
 
-#+begin_src sh :tangle no :results no
-  git clone https://github.com/Sasanidas/Apprentice ~/.emacs.d/vendor/apprentice.el
-#+end_src
-
-Then load the package
-
-#+begin_src emacs-lisp
-  (add-to-list 'load-path "~/.emacs.d/vendor/apprentice.el/")
-  (require 'apprentice)
-#+end_src
-
-Install also the standard =elixir-mode= and the package to manage =exunit=.
-
-#+begin_src emacs-lisp
-  (use-package elixir-mode)
-  (use-package exunit
-    :after 'elixir-mode)
+#+begin_src sh
+mix run examples/bot.exs
 #+end_src
