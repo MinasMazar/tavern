@@ -1,0 +1,47 @@
+<!-- livebook:{"autosave_interval_s":600} -->
+
+# Tavern ~ Drive your Emacs with Elixir
+
+```elixir
+Mix.install([
+  {:tavern, "~> 0.1", git: "https://github.com/MinasMazar/tavern.git"}
+])
+```
+
+## Usage
+
+This dumb bot is going to print the UTC timestamp in a buffer named __<\*tavern*>__ in your Emacs active session every 5 seconds, for 2 minutes.
+
+```elixir
+defmodule Tavern.Bot do
+  require Logger
+  import Tavern.Helpers
+  use GenServer
+
+  def start_link do
+    GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  end
+
+  def init(_) do
+    :timer.send_interval(1_000, :tick)
+    {:ok, %{buffer_name: "<*tavern*>"}}
+  end
+
+  def handle_info(:tick, state) do
+    replace_buffer_content(state.buffer_name, get_line(state))
+    |> Tavern.emacs_eval()
+
+    {:noreply, state}
+  end
+
+  def get_line(_) do
+    inspect(DateTime.utc_now())
+  end
+end
+```
+
+```elixir
+{:ok, pid} = Tavern.Bot.start_link()
+Process.sleep(2 * 60 * 1000)
+GenServer.stop(pid)
+```
