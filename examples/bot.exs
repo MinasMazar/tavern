@@ -25,5 +25,5 @@ defmodule Tavern.Examples.Bot do
 end
 
 {:ok, pid} = Tavern.Examples.Bot.start_link()
-Process.sleep(2 * 60 * 1000)
+Process.sleep(10 * 1000)
 GenServer.stop(pid)

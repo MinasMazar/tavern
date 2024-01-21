@@ -3,66 +3,69 @@ defmodule Tavern.Elisp do
   Cast a string to a string.
 
   iex> Tavern.Elisp.sexp(nil)
-  ""
-
-  iex> Tavern.Elisp.sexp({:str, nil})
-  ""
-
-  iex> Tavern.Elisp.sexp({:str, "message"})
-  ~s("message")
+  nil
+  
+  iex> Tavern.Elisp.sexp([])
+  "()"
 
   iex> Tavern.Elisp.sexp("message")
   ~s("message")
 
-  iex> Tavern.Elisp.sexp(:"a-function")
-  :"a-function"
+  iex> Tavern.Elisp.sexp(:variable)
+  :variable
 
-  Cast a tuple to en elisp function evaluation.
+  iex> Tavern.Elisp.sexp(:"a-variable")
+  :"a-variable"
 
-  iex> Tavern.Elisp.sexp({"message", ["hello here!"]})
-  ~s[(message "hello here!")]
+  iex> Tavern.Elisp.sexp({:quote, :"a-variable"})
+  ~s('a-variable)
 
-  Cast a list to a list.
+  iex> Tavern.Elisp.sexp(42)
+  42
 
-  iex> Tavern.Elisp.sexp(%{a: 1, b: 2})
-  ":a 1 :b 2"
+  Cast a list to a list
 
-  iex> Tavern.Elisp.sexp([])
-  "()"
+  iex> Tavern.Elisp.sexp([:function, :b, 3, "d", 5])
+  ~s[(function b 3 "d" 5)]
 
-  iex> Tavern.Elisp.sexp(nil)
-  ""
+  iex> Tavern.Elisp.sexp([:lambda, [:x], [:"+", :x, 3]])
+  ~s[(lambda (x) (+ x 3))]
+
+  iex> Tavern.Elisp.sexp([:"+", 2, 4])
+  "(+ 2 4)"
+
+  Cast a tuple to an association list
+
+  iex> Tavern.Elisp.sexp({:a, "b"})
+  ~s[(a . "b")]
 
   Cast a map to a property list.
 
   iex> Tavern.Elisp.sexp(%{a: 1, b: 2})
   ":a 1 :b 2"
   """
-  def sexp(nil), do: ""
-  def sexp({:str, nil}), do: ""
-  def sexp({:str, body}) when is_binary(body), do: "\"#{body}\""
-  def sexp(body) when is_binary(body), do: "\"#{body}\""
-  def sexp(body) when is_atom(body), do: body
-  def sexp({fun, rest = {_, _}}) do
-    "(#{fun} #{sexp(rest)})"
-  end
-  def sexp({fun, rest}) when is_binary(rest) do
-    "(#{fun} #{sexp(rest)})"
-  end
-  def sexp({fun, rest}) when is_list(rest) do
-    rest = rest
-    |> Enum.map(& "#{sexp(&1)}")
-    |> Enum.join(" ")
-    "(#{fun} #{rest})"
-  end
-  def sexp({fun, nil}) do
-    "(#{fun} nil)"
-  end
-  def sexp([first | rest]), do: "(#{sexp(first)} #{sexp(rest)})"
+  def sexp(nil), do: nil
   def sexp([]), do: "()"
-  def sexp(map) when is_map(map) do
-    for {k,v} <- map, into: [] do
-      ":#{k} #{v}"
+  def sexp(exp) when is_binary(exp), do: "\"#{exp}\""
+  def sexp(exp) when is_atom(exp), do: exp
+  def sexp(exp) when is_integer(exp) or is_float(exp), do: exp
+
+  def sexp({:quote, exp}), do: "'#{sexp(exp)}"
+  def sexp({car, cdr}), do: "(#{sexp(car)} . #{sexp(cdr)})"
+  def sexp([exp]), do: "(#{sexp(exp)})"
+
+  def sexp(exp) when is_list(exp) do
+    exp = exp
+    |> Enum.map(& sexp(&1))
+    |> Enum.join(" ")
+    "(#{exp})"
+  end
+
+  def sexp(exp) when is_map(exp) do
+    for {k,v} <- exp, into: [] do
+      ":#{k} #{sexp(v)}"
     end |> Enum.join(" ")
   end
+
+  def sexp(_), do: raise ArgumentError, "#{__MODULE__} received invalid sexp"
 end

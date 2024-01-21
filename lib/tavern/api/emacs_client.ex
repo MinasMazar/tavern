@@ -2,22 +2,13 @@ defmodule Tavern.Api.EmacsClient do
   @moduledoc """
   Documentation for `Tavern`.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Tavern.hello()
-      :world
-
-  """
   require Logger
 
   def emacs_eval(source), do: emacs_eval(source, :wait_output)
   def emacs_eval(source, :spawn) do
-    Logger.debug("Sending #{inspect source} to emacsclient")
-    port = Port.open({:spawn, "emacsclient -e '#{source}'"}, [])
+    cmd = ~s[emacsclient -e #{inspect source}]
+    Logger.debug("Sending #{cmd} to emacsclient")
+    port = Port.open({:spawn, cmd}, [])
     Port.monitor(port)
   end
 
