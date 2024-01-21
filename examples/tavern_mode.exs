@@ -23,12 +23,14 @@ defmodule Tavern.Examples.TavernMode do
   (use-package elixir-mode)
   (use-package exunit
     :after 'elixir-mode)
-
   """
 
   def run do
-    System.cmd("git", ~w[git clone https://github.com/Sasanidas/Apprentice ~/.emacs.d/vendor/apprentice.el])
-    Tavern.emacs_eval(@tavern_mode_src)
+    System.cmd("git", ~w[clone https://github.com/Sasanidas/Apprentice ~/.emacs.d/vendor/apprentice.el])
+    src = "(progn #{@tavern_mode_src})"
+    |> String.trim()
+    |> String.replace(~r([\n\t]), " ")
+    Tavern.emacs_eval(src)
   end
 end
 
