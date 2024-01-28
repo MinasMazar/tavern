@@ -31,13 +31,6 @@ defmodule Tavern do
     emacs_eval(:el, source |> to_elisp!())
   end
 
-  defp to_elisp(source) do
-    try do
-      to_elisp!(source)
-    rescue
-      ArgumentError -> {:error, :invalid_sexp}
-    end
-  end
   defp to_elisp!(source), do: Elisp.sexp(source)
-  defp evaluate(source), do: Connection.emacs_eval(source)
+  defp evaluate(source), do: Connection.emacs_eval(source, :wait)
 end
