@@ -1,5 +1,5 @@
 defmodule Tavern do
-  alias Tavern.{Connection, Elisp, Helpers}
+  alias Tavern.{Api, Elisp, Helpers}
 
   @moduledoc """
   Documentation for `Tavern`.
@@ -32,5 +32,5 @@ defmodule Tavern do
   end
 
   defp to_elisp!(source), do: Elisp.sexp(source)
-  defp evaluate(source), do: Connection.emacs_eval(source, :wait)
+  defp evaluate(source), do: Api.send_message(source)
 end
