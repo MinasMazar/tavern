@@ -31,7 +31,6 @@ The =Tavern.Elisp= module implement the =sexp= function that keeps an Elixir ter
   mix compile
 #+end_src
 
-
 ** Usage
 *** Livebook
 

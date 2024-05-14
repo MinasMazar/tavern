@@ -18,6 +18,12 @@ defmodule Tavern.Bot do
   import Tavern.Helpers
   use GenServer
 
+  def start do
+    {:ok, pid} = start_link()
+    Process.sleep(60 * 60 * 1000)
+    GenServer.stop(pid)
+  end
+
   def start_link do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
@@ -41,7 +47,6 @@ end
 ```
 
 ```elixir
-{:ok, pid} = Tavern.Bot.start_link()
-Process.sleep(2 * 60 * 1000)
-GenServer.stop(pid)
+# Tavern.Bot.start()
+Mix.env()
 ```
