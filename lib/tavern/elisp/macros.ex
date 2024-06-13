@@ -24,15 +24,4 @@ defmodule Tavern.Elisp.Macros do
      body
     ]
   end
-
-  def render_template(template, params) do
-    template
-    |> template_filename()
-    |> EEx.eval_file(assigns: params)
-    |> String.trim()
-  end
-
-  def template_filename(template) do
-    Path.expand("../templates/#{template}.eex.el", __ENV__.file)
-  end
 end

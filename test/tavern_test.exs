@@ -30,13 +30,4 @@ defmodule TavernTest do
       assert Tavern.emacs_eval(sexp) == "(4 5 6)"
     end
   end
-
-  describe "Tavern.Helpers" do
-    test "render template" do
-      sexp = Tavern.Helpers.render_template(:test, message: "hello!")
-
-      assert sexp == "(message \"hello!\")"
-      assert Tavern.emacs_eval(sexp) == "\"hello!\""
-    end
-  end
 end

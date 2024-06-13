@@ -1,27 +1,90 @@
-<!-- livebook:{"autosave_interval_s":600} -->
+<!-- livebook:{"autosave_interval_s":600,"persist_outputs":true} -->
 
 # Tavern ~ Drive your Emacs with Elixir
 
 ```elixir
+path = Path.expand("workspace/tavern", "~/")
+
 Mix.install([
-  {:tavern, "~> 0.1", git: "https://github.com/MinasMazar/tavern.git"}
+  # git: "https://github.com/MinasMazar/tavern.git"}
+  {:tavern, "~> 0.1", path: path, env: :prod}
 ])
 ```
 
 ## Usage
+
+## Bot modules
+
+```elixir
+defmodule Tavern.Bot.Alarm do
+  use GenServer
+
+  def init(state) do
+    Tavern.emacs_eval([:"use-package", :"alarm-clock"])
+    {:ok, state}
+  end
+
+  def handle_info({:message, _}, state), do: {:noreply, state}
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Tavern.Bot.Alarm, <<70, 79, 82, 49, 0, 0, 18, ...>>, {:handle_info, 2}}
+```
+
+```elixir
+defmodule Tavern.Bot.Notification do
+  def notify(msg) do
+    Tavern.emacs_eval([:message, "%s", msg])
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Tavern.Bot.Notification, <<70, 79, 82, 49, 0, 0, 6, ...>>, {:notify, 1}}
+```
+
+```elixir
+defmodule Tavern.Bot.Query do
+  def ask(prompt, options) do
+    Tavern.emacs_eval(
+      with_current_frame do
+        [:"completing-read", prompt, {:quote, options}]
+      end
+    )
+  end
+
+  def with_current_frame(do: body) do
+    [:"with-selected-frame", [:"selected-frame"], body]
+  end
+end
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Tavern.Bot.Query, <<70, 79, 82, 49, 0, 0, 7, ...>>, {:with_current_frame, 1}}
+```
 
 This dumb bot is going to print the UTC timestamp in a buffer named __<\*tavern*>__ in your Emacs active session every 5 seconds, for 2 minutes.
 
 ```elixir
 defmodule Tavern.Bot do
   require Logger
-  import Tavern.Helpers
+  import Tavern.Bot.Notification
+  import Tavern.Bot.Query
   use GenServer
 
+  @ask_timeout 24 * 60 * 1000
   def start do
-    {:ok, pid} = start_link()
-    Process.sleep(60 * 60 * 1000)
-    GenServer.stop(pid)
+    case start_link() do
+      {:ok, pid} -> pid
+      {:error, {:already_started, pid}} -> pid
+    end
   end
 
   def start_link do
@@ -29,24 +92,154 @@ defmodule Tavern.Bot do
   end
 
   def init(_) do
-    :timer.send_interval(1_000, :tick)
-    {:ok, %{buffer_name: "<*tavern*>"}}
+    :timer.send_interval(@ask_timeout, :tick)
+    Tavern.subscribe()
+    {:ok, %{buffer_name: "*tavern*"}}
   end
 
   def handle_info(:tick, state) do
-    replace_buffer_content(state.buffer_name, get_line(state))
-    |> Tavern.emacs_eval()
+    ask("Are you ok?", ["sure", "not really"])
+    |> handle_answer()
+    |> notify()
 
     {:noreply, state}
   end
 
-  def get_line(_) do
-    inspect(DateTime.utc_now())
+  def handle_info({:message, message}, state) do
+    state =
+      try do
+        {evaluated, _} = Code.eval_string(message)
+        Logger.info("Evaluated Elixir code from Emacs: #{inspect(evaluated)}")
+        state
+      rescue
+        CompileError -> state
+        _ -> state
+      end
+
+    {:noreply, state}
+  end
+
+  def handle_answer(answer) do
+    Logger.debug(answer)
+    "ok!"
   end
 end
 ```
 
+<!-- livebook:{"output":true} -->
+
+```
+{:module, Tavern.Bot, <<70, 79, 82, 49, 0, 0, 25, ...>>, {:handle_answer, 1}}
+```
+
+## Usage
+
 ```elixir
-# Tavern.Bot.start()
-Mix.env()
+defmodule Tavern.Usage do
+  def start do
+    Application.start(:tavern)
+    Tavern.Bot.start()
+    Process.sleep(26 * 60 * 1_000)
+    stop()
+  end
+
+  def stop do
+    try do
+      if Process.whereis(Tavern.Bot), do: GenServer.stop(Tavern.Bot)
+      Application.stop(:tavern)
+    rescue
+      _ -> :error
+    end
+  end
+end
+
+Tavern.Usage.start()
+```
+
+<!-- livebook:{"output":true} -->
+
+```
+
+17:06:06.147 [debug] Subscribing socket handler ({:ok, #PID<0.981.0>}
+
+17:06:06.147 [debug] Received message "\"let's start!\""
+
+17:06:06.147 [info] Evaluated Elixir code from Emacs: "let's start!"
+
+17:06:12.147 [debug] Sending ping..
+
+17:06:12.150 [debug] Received pong!
+
+17:06:18.151 [debug] Sending ping..
+
+17:06:18.157 [debug] Received pong!
+
+17:06:24.157 [debug] Sending ping..
+
+17:06:24.158 [debug] Received pong!
+
+17:06:30.159 [debug] Sending ping..
+
+17:06:30.160 [debug] Received pong!
+
+17:06:36.161 [debug] Sending ping..
+
+17:06:36.162 [debug] Received pong!
+
+17:06:42.163 [debug] Sending ping..
+
+17:06:42.165 [debug] Received pong!
+
+17:06:48.165 [debug] Sending ping..
+
+17:06:48.167 [debug] Received pong!
+
+17:06:54.168 [debug] Sending ping..
+
+17:06:54.169 [debug] Received pong!
+
+17:07:00.174 [debug] Sending ping..
+
+17:07:00.188 [debug] Received pong!
+
+17:07:06.188 [debug] Sending ping..
+
+17:07:06.189 [debug] Received pong!
+
+17:07:12.190 [debug] Sending ping..
+
+17:07:12.191 [debug] Received pong!
+
+17:07:18.192 [debug] Sending ping..
+
+17:07:18.194 [debug] Received pong!
+
+17:07:24.194 [debug] Sending ping..
+
+17:07:24.198 [debug] Received pong!
+
+17:07:30.198 [debug] Sending ping..
+
+17:07:30.200 [debug] Received pong!
+
+17:07:36.200 [debug] Sending ping..
+
+17:07:36.201 [debug] Received pong!
+
+17:07:42.201 [debug] Sending ping..
+
+17:07:42.203 [debug] Received pong!
+
+17:07:48.203 [debug] Sending ping..
+
+17:07:48.205 [debug] Received pong!
+
+17:07:54.206 [debug] Sending ping..
+
+17:07:54.208 [debug] Received pong!
+
+17:08:00.208 [debug] Sending ping..
+
+17:08:00.239 [debug] Received pong!
+
 ```

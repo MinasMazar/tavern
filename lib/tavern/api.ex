@@ -1,4 +1,5 @@
 defmodule Tavern.Api do
+  require Logger
   alias Tavern.Api.EmacsClient
 
   def subscribe do
@@ -38,6 +39,6 @@ defmodule Tavern.Api do
   end
 
   def websocket_enabled? do
-    !System.get_env("TAVERN_WEBSOCKET_DISABLED")
+    System.get_env("TAVERN_WEBSOCKET_DISABLED") != "true"
   end
 end
