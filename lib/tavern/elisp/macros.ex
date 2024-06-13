@@ -1,4 +1,4 @@
-defmodule Tavern.Helpers do
+defmodule Tavern.Elisp.Macros do
   def get_buffer_content(buffer) do
     {:"with-current-buffer", buffer, {:"buffer-string"}}
   end
