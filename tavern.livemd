@@ -1,4 +1,4 @@
-<!-- livebook:{"autosave_interval_s":600,"persist_outputs":true} -->
+<!-- livebook:{"autosave_interval_s":600} -->
 
 # Tavern ~ Drive your Emacs with Elixir
 
@@ -11,7 +11,11 @@ Mix.install([
 ])
 ```
 
-## Usage
+## Start
+
+```elixir
+Application.start(:tavern)
+```
 
 ## Bot modules
 
@@ -28,24 +32,12 @@ defmodule Tavern.Bot.Alarm do
 end
 ```
 
-<!-- livebook:{"output":true} -->
-
-```
-{:module, Tavern.Bot.Alarm, <<70, 79, 82, 49, 0, 0, 18, ...>>, {:handle_info, 2}}
-```
-
 ```elixir
 defmodule Tavern.Bot.Notification do
   def notify(msg) do
     Tavern.emacs_eval([:message, "%s", msg])
   end
 end
-```
-
-<!-- livebook:{"output":true} -->
-
-```
-{:module, Tavern.Bot.Notification, <<70, 79, 82, 49, 0, 0, 6, ...>>, {:notify, 1}}
 ```
 
 ```elixir
@@ -64,11 +56,9 @@ defmodule Tavern.Bot.Query do
 end
 ```
 
-<!-- livebook:{"output":true} -->
+<!-- livebook:{"branch_parent_index":1} -->
 
-```
-{:module, Tavern.Bot.Query, <<70, 79, 82, 49, 0, 0, 7, ...>>, {:with_current_frame, 1}}
-```
+## Usage (a simple bot)
 
 This dumb bot is going to print the UTC timestamp in a buffer named __<\*tavern*>__ in your Emacs active session every 5 seconds, for 2 minutes.
 
@@ -126,120 +116,49 @@ defmodule Tavern.Bot do
 end
 ```
 
-<!-- livebook:{"output":true} -->
+<!-- livebook:{"branch_parent_index":1} -->
 
-```
-{:module, Tavern.Bot, <<70, 79, 82, 49, 0, 0, 25, ...>>, {:handle_answer, 1}}
-```
-
-## Usage
+## Elfeed bot
 
 ```elixir
-defmodule Tavern.Usage do
-  def start do
-    Application.start(:tavern)
-    Tavern.Bot.start()
-    Process.sleep(26 * 60 * 1_000)
-    stop()
+defmodule Tavern.Bots.Elfeed do
+  require Logger
+  import Tavern.Bot.Notification
+  use GenServer
+
+  def start_link do
+    with {:ok, pid} <- GenServer.start_link(__MODULE__, nil, name: __MODULE__) do
+      pid
+    else
+      {:error, {:already_started, pid}} -> pid
+    end
   end
 
-  def stop do
-    try do
-      if Process.whereis(Tavern.Bot), do: GenServer.stop(Tavern.Bot)
-      Application.stop(:tavern)
-    rescue
-      _ -> :error
-    end
+  def stop, do: GenServer.stop(__MODULE__)
+
+  def init(state) do
+    :timer.send_interval(31 * 60 * 1_000, :tick)
+    Process.send_after(self(), :tick, 3 * 1_000)
+    {:ok, state}
+  end
+
+  def handle_info(:tick, state) do
+    Tavern.emacs_eval([:"elfeed-update"])
+    notify("Elfeed update!")
+    {:noreply, state}
   end
 end
 
-Tavern.Usage.start()
+pid = Tavern.Bots.Elfeed.start_link()
+Process.sleep(:infinity)
 ```
 
-<!-- livebook:{"output":true} -->
+<!-- livebook:{"branch_parent_index":1} -->
 
-```
+## Debug section
 
-17:06:06.147 [debug] Subscribing socket handler ({:ok, #PID<0.981.0>}
-
-17:06:06.147 [debug] Received message "\"let's start!\""
-
-17:06:06.147 [info] Evaluated Elixir code from Emacs: "let's start!"
-
-17:06:12.147 [debug] Sending ping..
-
-17:06:12.150 [debug] Received pong!
-
-17:06:18.151 [debug] Sending ping..
-
-17:06:18.157 [debug] Received pong!
-
-17:06:24.157 [debug] Sending ping..
-
-17:06:24.158 [debug] Received pong!
-
-17:06:30.159 [debug] Sending ping..
-
-17:06:30.160 [debug] Received pong!
-
-17:06:36.161 [debug] Sending ping..
-
-17:06:36.162 [debug] Received pong!
-
-17:06:42.163 [debug] Sending ping..
-
-17:06:42.165 [debug] Received pong!
-
-17:06:48.165 [debug] Sending ping..
-
-17:06:48.167 [debug] Received pong!
-
-17:06:54.168 [debug] Sending ping..
-
-17:06:54.169 [debug] Received pong!
-
-17:07:00.174 [debug] Sending ping..
-
-17:07:00.188 [debug] Received pong!
-
-17:07:06.188 [debug] Sending ping..
-
-17:07:06.189 [debug] Received pong!
-
-17:07:12.190 [debug] Sending ping..
-
-17:07:12.191 [debug] Received pong!
-
-17:07:18.192 [debug] Sending ping..
-
-17:07:18.194 [debug] Received pong!
-
-17:07:24.194 [debug] Sending ping..
-
-17:07:24.198 [debug] Received pong!
-
-17:07:30.198 [debug] Sending ping..
-
-17:07:30.200 [debug] Received pong!
-
-17:07:36.200 [debug] Sending ping..
-
-17:07:36.201 [debug] Received pong!
-
-17:07:42.201 [debug] Sending ping..
-
-17:07:42.203 [debug] Received pong!
-
-17:07:48.203 [debug] Sending ping..
-
-17:07:48.205 [debug] Received pong!
-
-17:07:54.206 [debug] Sending ping..
-
-17:07:54.208 [debug] Received pong!
-
-17:08:00.208 [debug] Sending ping..
-
-17:08:00.239 [debug] Received pong!
-
+```elixir
+# Tavern.Api.EmacsClient.emacs_eval("nil")
+# Tavern.Api.send_message(~w[(message "hi there!")], :emacsclient)
+# Tavern.Api.send_message(~w[(message "hi there!")], :ws)
 ```
