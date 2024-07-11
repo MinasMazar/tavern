@@ -4,7 +4,7 @@ defmodule Tavern.Examples.TavernMode do
   import Tavern.Elisp.Macros
 
   @name :tavern_mode
-  @resume_timeout 50_000
+  @resume_timeout nil # 50_000
   @start_node "entrypoint"
   @setup [:defun, :"tavern-resume", [], [:interactive], [:"tavern-send", @start_node]]
   @root %{
@@ -22,10 +22,7 @@ defmodule Tavern.Examples.TavernMode do
   end
 
   def navigate(path, state) when is_binary(path) do
-    IO.puts("== nav path: #{inspect path}, state: #{inspect state}")
     new_path = set_path(state, path)
-    IO.puts("  new path #{inspect new_path}")
-    IO.puts("")
     navigate(new_path, state)
   end
 
@@ -40,7 +37,7 @@ defmodule Tavern.Examples.TavernMode do
   end
 
   def navigate(path, state) do
-    IO.puts("x: #{inspect path}")
+    IO.puts("unknown path: #{inspect path}")
     nil
   end
 
@@ -73,7 +70,11 @@ defmodule Tavern.Examples.TavernMode do
   end
 
   def init(state) do
-    {:ok, ref} = :timer.send_interval(@resume_timeout, self(), :resume)
+    {:ok, ref} = if @resume_timeout do
+      :timer.send_interval(@resume_timeout, self(), :resume)
+    else
+      {:ok, nil}
+    end
     Tavern.subscribe()
     setup()
     {:ok, Map.put(state, :ref, ref)}
