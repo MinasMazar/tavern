@@ -1,7 +1,13 @@
 defmodule Tavern.Elisp.Macros do
+  def select(prompt, options) do
+    [:"completing-read", prompt, options]
+  end
+
   def get_buffer_content(buffer) do
     {:"with-current-buffer", buffer, {:"buffer-string"}}
   end
+
+  def message(message), do: [:message, message]
 
   def replace_buffer_content(buffer, src) do
     [:progn,

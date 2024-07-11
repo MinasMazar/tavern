@@ -29,6 +29,7 @@
 
   (defun tavern-eval (string)
     "Evaluate elisp code stored in a string."
+    ;; (message (format "tavern> evaluating %s" string))
     (eval (car (read-from-string string))))
 
   (defun tavern--pong ()

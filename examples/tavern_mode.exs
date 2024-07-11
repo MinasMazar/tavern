@@ -1,30 +1,108 @@
 defmodule Tavern.Examples.TavernMode do
-  import Tavern.Helpers
+  require Logger
+  use GenServer
+  import Tavern.Elisp.Macros
 
-  @setup [
-    :progn,
-    [:"add-to-list", {:quote, :"load-path"}, "~/.emacs.d/vendor"],
-    [:require, {:quote, :package}],
-    [:setq, :"packages-archives", 
-	{:quote, [
-	  {"melpa", "https://melpa.org/packages/"},
-	  {"elpa", "https://elpa.gnu.org/packages/"},
-	  {"nongnu", "https://elpa.nongnu.org/nongnu/"}
-	]}
-    ],
-    [:require, {:quote, :"use-package"}],
-    [:require, {:quote, :"use-package-ensure"}],
-    [:setq,
-     :"use-package-always-ensure", :t,
-     :"package-enable-at-startup", :t],
-    [:"package-initialize"],
-    [:"use-package", :"elixir-mode"],
-    [:"use-package", :exunit, %{after: {:quote, "elixir-mode"}}]
-  ]
+  @name :tavern_mode
+  @resume_timeout 50_000
+  @start_node "entrypoint"
+  @setup [:defun, :"tavern-resume", [], [:interactive], [:"tavern-send", @start_node]]
+  @root %{
+    "entrypoint" => [:quit, "second"],
+    "second" => {__MODULE__, :do_something, ["something"]}
+  }
 
-  def run do
+  def setup do
     Tavern.emacs_eval(@setup)
+  end
+
+  def navigate(:quit, state), do: state
+  def navigate(path, state) when is_atom(path) and not is_nil(path) do
+    navigate(Atom.to_string(path), state)
+  end
+
+  def navigate(path, state) when is_binary(path) do
+    IO.puts("== nav path: #{inspect path}, state: #{inspect state}")
+    new_path = set_path(state, path)
+    IO.puts("  new path #{inspect new_path}")
+    IO.puts("")
+    navigate(new_path, state)
+  end
+
+  def navigate(items, state) when is_list(items) do
+    [:"tavern-send", select("choose: ", {:quote, items})]
+    |> Tavern.emacs_eval()
+    :quit
+  end
+
+  def navigate({mod, fun, args}, state) do
+    apply(mod, fun, args)
+  end
+
+  def navigate(path, state) do
+    IO.puts("x: #{inspect path}")
+    nil
+  end
+
+  def set_path(state = %{root: root, node: node}, "." <> path) when is_binary(node) do
+    with nodes <- String.split(path, ".") do
+      root
+      |> get_in(nodes)
+    end
+  end
+
+  def set_path(state = %{node: node}, path) when is_binary(node) do
+    set_path(state, "." <> path)
+  end
+
+  def set_path(state = %{node: node}, path) when is_map(node) do
+    with nodes <- String.split(path, ".") do
+      node
+      |> get_in(nodes)
+    end
+  end
+
+  def async_exec(mod, fun, args) do
+    IO.puts("todo: async exec")
+  end
+
+  # server
+  #
+  def start_link do
+    GenServer.start_link(__MODULE__, %{root: @root, node: @start_node}, name: @name)
+  end
+
+  def init(state) do
+    {:ok, ref} = :timer.send_interval(@resume_timeout, self(), :resume)
+    Tavern.subscribe()
+    setup()
+    {:ok, Map.put(state, :ref, ref)}
+  end
+
+  def resume(pid \\ @name), do: GenServer.call(@name, :resume)
+
+  def handle_call(:resume, _, state) do
+    with result <- navigate(state.node, state) do
+      {:reply, result, state}
+    end
+  end
+
+  def handle_info(:resume, state) do
+    navigate(state.node, state)
+    {:noreply, state}
+  end
+
+  def handle_info({:message, path}, state) do
+    IO.puts("Message from Emacs #{inspect path}")
+    navigate(path, state)
+    {:noreply, state}
+  end
+
+  def do_something(message) do
+    IO.puts("Doing #{inspect message}")
+    :quit
   end
 end
 
-Tavern.Examples.TavernMode.run()
+Tavern.Examples.TavernMode.start_link()
+# Tavern.Examples.TavernMode.resume()
