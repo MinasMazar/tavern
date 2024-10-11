@@ -1,6 +1,6 @@
 defmodule Tavern.Elisp.Macros do
   def select(prompt, options) do
-    [:"completing-read", prompt, options]
+    [:"completing-read", prompt, {:quote, options}]
   end
 
   def get_buffer_content(buffer) do

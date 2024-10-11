@@ -2,7 +2,7 @@
   :config
   (require 'websocket)
 
-  (defvar tavern-endpoint "ws://localhost:9069/tavern"
+  (defvar tavern-endpoint "ws://localhost:4305/tavern"
     "Endpoint of tavern elixir application")
 
   (defun tavern-start ()
@@ -17,6 +17,10 @@
                (tavern-eval body)))
 					;(message "[tavern] message received: %S" body)))
            :on-close (lambda (_websocket) (message "websocket closed")))))
+
+  (defun tavern-stop
+      (interactive)
+      (websocket-close tavern--websocket))
 
   (defun tavern-send (payload)
     (interactive "sMessage: ")
