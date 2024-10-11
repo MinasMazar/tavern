@@ -69,6 +69,7 @@ defmodule Tavern.Api.EmacsClient do
   defp sanitize_output(result) when is_list(result) do
     result
     |> List.to_string()
+    |> String.replace(~r{(^"|"$)}, "")
     |> String.trim()
   end
 end
