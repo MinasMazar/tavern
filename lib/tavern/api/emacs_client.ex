@@ -2,7 +2,10 @@ defmodule Tavern.Api.EmacsClient do
   require Logger
   use GenServer
 
-  def emacs_eval(source), do: emacs_eval(source, 5000)
+  def emacs_eval(source) do
+    GenServer.start(__MODULE__, source)
+  end
+
   def emacs_eval(source, :wait), do: emacs_eval(source, :infinity)
   def emacs_eval(source, timeout) do
     with {:ok, pid} <- GenServer.start(__MODULE__, source) do
@@ -13,8 +16,8 @@ defmodule Tavern.Api.EmacsClient do
   def get_output(pid, timeout) do
     GenServer.call(pid, :result)
     receive do
-      [result] -> result
-      [result | rest] -> {:multi, result, rest}
+      {:output, [result]} -> result
+      {:output, [result | rest]} -> {:multi, result, rest}
     after
       timeout -> :timeout
     end
@@ -41,7 +44,7 @@ defmodule Tavern.Api.EmacsClient do
   def handle_call(:result, _, state = {result, from}) do
     Logger.debug("#{__MODULE__} result with result #{inspect result} and pid #{inspect from}")
     # GenServer.reply(from, result)
-    with {pid, _} <- from, do: send(pid, result)
+    with {pid, _} <- from, do: send(pid, {:output, result})
     {:reply, result, state}
   end
 
