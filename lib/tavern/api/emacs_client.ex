@@ -16,8 +16,10 @@ defmodule Tavern.Api.EmacsClient do
   def get_output(pid, timeout) do
     GenServer.call(pid, :result)
     receive do
-      {:output, [result]} -> result
-      {:output, [result | rest]} -> {:multi, result, rest}
+#	{:output, result} -> result
+      {:tavern, :output, [result]} -> result
+      {:tavern, :output, [result | rest]} -> {:multi, result, rest}
+      {:tavern, :down} -> :down
     after
       timeout -> :timeout
     end
@@ -44,7 +46,7 @@ defmodule Tavern.Api.EmacsClient do
   def handle_call(:result, _, state = {result, from}) do
     Logger.debug("#{__MODULE__} result with result #{inspect result} and pid #{inspect from}")
     # GenServer.reply(from, result)
-    with {pid, _} <- from, do: send(pid, {:output, result})
+    with {pid, _} <- from, do: send(pid, {:tavern, :output, result})
     {:reply, result, state}
   end
 
@@ -64,6 +66,12 @@ defmodule Tavern.Api.EmacsClient do
     end
   end
 
+  def handle_info({:DOWN, _, :port, _, :normal}, state = {result, from}) do
+    Logger.debug("#{__MODULE__} down")
+    with {pid, _} <- from, do: send(pid, {:tavern, :down})
+    {:stop, {:shutdown, :normal}, nil}
+  end
+
   def handle_info({:DOWN, _, :port, _, :normal}, _) do
     Logger.debug("#{__MODULE__} message from port received DOWN")
     {:stop, {:shutdown, :normal}, nil}
@@ -73,6 +81,7 @@ defmodule Tavern.Api.EmacsClient do
     result
     |> List.to_string()
     |> String.replace(~r{(^"|"$)}, "")
+    |> String.replace(~r[\\], "")
     |> String.trim()
   end
 end
