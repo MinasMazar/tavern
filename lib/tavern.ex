@@ -1,5 +1,5 @@
 defmodule Tavern do
-  @default_timeout 300
+  @default_timeout :infinity
   alias Tavern.{Elisp, Api.EmacsClient}
 
   @moduledoc """
